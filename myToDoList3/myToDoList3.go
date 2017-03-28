@@ -24,91 +24,69 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/users/{task}", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/tasks/", func(w http.ResponseWriter, r *http.Request) {
 
-		vars := mux.Vars(r)
-		if taskName, ok := vars["task"]; ok {
+		taskList := GetTasks("./tasks.json")
 
-			taskList := GetTasks("./tasks.json")
+		if taskList == nil || len(taskList.Task) == 0 {
+			taskList = &MyToDoList{[]string{"task 1", "task 2"}, "super info"}
+		}
 
-			if taskList.Tasks == nil {
-				taskList = &TasksToDo{map[string]MyToDoList{}}
-			}
-			td, ok := taskList.Tasks[taskName]
-			if !ok {
-				td = MyToDoList{[]string{}, ""}
+		if currentAsJSON, err := json.Marshal(taskList); err == nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.WriteHeader(http.StatusOK)
+			w.Write(currentAsJSON)
+			//fmt.Fprintf(w, "%v", string(currentAsJSON))
 
-				taskList.Tasks[taskName] = td
-
-			}
-			taskList.Tasks[taskName] = td
-			WriteTasks("./tasks.json", taskList)
-			if currentAsJSON, err := json.Marshal(td); err == nil {
-				w.Header().Set("Content-Type", "application/json")
-				w.Header().Set("Access-Control-Allow-Origin", "*")
-				w.WriteHeader(http.StatusOK)
-				w.Write(currentAsJSON)
-				//fmt.Fprintf(w, "%v", string(currentAsJSON))
-
-			} else {
-				w.WriteHeader(http.StatusInternalServerError)
-				fmt.Fprintf(w, "Error while creating JSON : %v", err)
-			}
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, "Please provide Game in URL")
+			fmt.Fprintf(w, "Error while creating JSON : %v", err)
 		}
 
 	}).Methods("GET")
 
-	r.HandleFunc("/users/{task}/move/{task:[1-9]}", func(w http.ResponseWriter, r *http.Request) {
+	// r.HandleFunc("/tasks/", func(w http.ResponseWriter, r *http.Request) {
+	// 	vars := mux.Vars(r)
+	// 	taskName := vars["task"]
 
-		vars := mux.Vars(r)
-		if taskName, ok := vars["task"]; ok {
+	// 	taskList := GetTasks("./tasks.json")
 
-			taskList := GetTasks("./tasks.json")
+	// 	if taskList == nil {
+	// 		taskList = &MyToDoList{}
+	// 	}
+	// 	td := MyToDoList{[]string{}, ""}
 
-			if taskList.Tasks == nil {
-				taskList = &TasksToDo{map[string]MyToDoList{}}
-			}
-			td, ok := taskList.Tasks[taskName]
-			if !ok {
-				td = MyToDoList{[]string{}, ""}
+	// 	td.addingTask()
 
-				taskList.Tasks[taskName] = td
+	// 	WriteTasks("./tasks.json", taskList)
+	// 	if currentAsJSON, err := json.Marshal(taskList); err == nil {
+	// 		w.Header().Set("Content-Type", "application/json")
+	// 		w.Header().Set("Access-Control-Allow-Origin", "*")
+	// 		w.WriteHeader(http.StatusOK)
+	// 		w.Write(currentAsJSON)
+	// 		//fmt.Fprintf(w, "%v", string(currentAsJSON))
 
-			}
+	// 	} else {
+	// 		w.WriteHeader(http.StatusInternalServerError)
+	// 		fmt.Fprintf(w, "Error while creating JSON : %v", err)
+	// 	}
 
-			taskList.Tasks[taskName] = td
-			WriteTasks("./tasks.json", taskList)
-			if currentAsJSON, err := json.Marshal(td); err == nil {
-				w.Header().Set("Content-Type", "application/json")
-				w.Header().Set("Access-Control-Allow-Origin", "*")
-				w.WriteHeader(http.StatusOK)
-				w.Write(currentAsJSON)
-				//fmt.Fprintf(w, "%v", string(currentAsJSON))
+	// }).Methods("POST")
 
-			} else {
-				w.WriteHeader(http.StatusInternalServerError)
-				fmt.Fprintf(w, "Error while creating JSON : %v", err)
-			}
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, "Please provide Game in URL")
-		}
-
-	}).Methods("POST")
 	http.ListenAndServe(":8080", r)
 }
 
-func (td *MyToDoList) addingTask(taskNum int) {
-	taskNum = 0
+// func (td *MyToDoList) addingInfo() {
+
+// }
+
+func (td *MyToDoList) addingTask() {
+	taskNum := 0
 	for taskNum = range td.Task {
 
 		if len(td.Task[taskNum]) < 1 {
 			td.Task[taskNum] = td.Info
-		} else {
-			td.Info = td.Task[taskNum]
 
 		}
 		taskNum++
@@ -117,9 +95,9 @@ func (td *MyToDoList) addingTask(taskNum int) {
 
 }
 
-func GetTasks(path string) *TasksToDo {
+func GetTasks(path string) *MyToDoList {
 
-	tasks := &TasksToDo{}
+	tasks := &MyToDoList{}
 	list, e := ioutil.ReadFile(path)
 	if e != nil {
 		panic(fmt.Sprint("no tasks.json :", e))
@@ -129,7 +107,7 @@ func GetTasks(path string) *TasksToDo {
 	return tasks
 }
 
-func WriteTasks(path string, taskList *TasksToDo) {
+func WriteTasks(path string, taskList *MyToDoList) {
 
 	d1, _ := json.Marshal(*taskList)
 	ioutil.WriteFile(path, d1, 0755)
