@@ -29,7 +29,7 @@ $(document).ready(function () {
 
 
     });
-    $("#addingbutton").click(function(){
+    $("#addTaskbutton").click(function(){
     $.post("http://localhost:8080/tasks/add",
     {
         //task: "Donald Duck"
